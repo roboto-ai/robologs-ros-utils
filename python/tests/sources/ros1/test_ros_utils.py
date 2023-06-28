@@ -3,7 +3,7 @@ import os
 import pytest
 
 from robologs_ros_utils.sources.ros1 import ros_utils
-from robologs_ros_utils.utils.file_utils import file_utils
+from robologs_ros_utils.utils import file_utils
 
 
 def test_get_image_name_from_index():
@@ -138,8 +138,40 @@ def test_get_images_from_bag(request, tmp_path):
     ros_utils.get_images_from_bag(rosbag_path=input_path,
                                   output_folder=output_folder,
                                   file_format="jpg")
+
     assert os.path.exists(output_folder_imgs)
 
     list_files = file_utils.get_all_files_of_type_in_directory(output_folder_imgs, "jpg")
 
     assert len(list_files) == 10
+
+
+def test_get_csv_data_from_bags(request, tmp_path):
+
+    input_path = get_image_bag_file_path(request.fspath.dirname, "test_images.bag")
+    output_folder = tmp_path
+
+    ros_utils.get_csv_data_from_bag(input_dir_or_file=input_path,
+                                    output_dir=output_folder,
+                                    topic_list=["/alphasense/cam0/image_raw"])
+
+    csv_topic_path_1 = f"{output_folder}/test_images/alphasense-cam0-image_raw.csv"
+
+    assert os.path.exists(csv_topic_path_1)
+
+    os.remove(csv_topic_path_1)
+
+    ros_utils.get_csv_data_from_bag(input_dir_or_file=input_path,
+                                    output_dir=output_folder)
+
+    csv_topic_path_1 = f"{output_folder}/test_images/alphasense-cam0-image_raw.csv"
+
+    assert os.path.exists(csv_topic_path_1)
+
+    csv_topic_path_2 = f"{output_folder}/test_images/alphasense-cam1-image_raw.csv"
+
+    ros_utils.get_csv_data_from_bag(input_dir_or_file=input_path,
+                                    output_dir=output_folder)
+
+    assert os.path.exists(csv_topic_path_2)
+

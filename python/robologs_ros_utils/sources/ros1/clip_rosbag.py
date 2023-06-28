@@ -15,8 +15,7 @@ from robologs_ros_utils.utils import file_utils
 @click.option("--name", type=str, help="Output name of rosbag, only is used when there is a single input bag")
 @click.option("--timestamp_type", type=str, help="valid values are [rosbag_ns, offset_s]", default="rosbag_ns")
 def clip_rosbag(input, output, topics, start_time, end_time, name, timestamp_type):
-    """Get images from Rosbag1 format"""
-
+    """Clip rosbags based on topics and timestamps"""
     input_path = input
     output_path = output
     topics = topics.split(",") if topics is not None else topics

@@ -1,1 +1,1 @@
-docker build --network=host -t robologs-image --file docker/ros1/Dockerfile .
+docker build --network=host -t robologs-ros-utils-image --file docker/ros1/Dockerfile .

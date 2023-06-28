@@ -10,6 +10,9 @@ from typing import Optional, Union, Tuple
 
 import cv2
 import numpy as np
+import pandas as pd
+import shutil
+import click
 from bagpy import bagreader
 from PIL import Image
 from rosbag import Bag
@@ -486,7 +489,6 @@ def get_clipped_bag_file(
         msg_counter = 0
         first_time_stamp = -1
         for topic, msg, t in Bag(input_bag_path).read_messages():
-
             if first_time_stamp < 0:
                 first_time_stamp = t.to_nsec()
                 if timestamp_type == "offset_s":
@@ -494,6 +496,7 @@ def get_clipped_bag_file(
                         start_time = convert_offset_s_to_rosbag_ns(
                             offset_s=start_time, first_rosbag_time_ns=first_time_stamp
                         )
+
                     if end_time:
                         end_time = convert_offset_s_to_rosbag_ns(
                             offset_s=end_time, first_rosbag_time_ns=first_time_stamp
@@ -507,7 +510,7 @@ def get_clipped_bag_file(
                                                                         start_time_rosbag_ns=start_time,
                                                                         end_time_rosbag_ns=end_time)
 
-            # stop iterating over rosbag if we're past the user specified ent-time
+            # stop iterating over rosbag if we're past the user specified end-time
             if past_end_time:
                 break
 
@@ -516,5 +519,74 @@ def get_clipped_bag_file(
 
             msg_counter += 1
             outbag.write(topic, msg, t)
+
+    return
+
+
+def get_all_topics(rosbag_list):
+    topic_list = list()
+    for rosbag_file in rosbag_list:
+        summary_dict = get_bag_info_from_file(rosbag_file)
+        if summary_dict:
+            if "topics" in summary_dict.keys():
+                topic_dict = get_topic_dict(summary_dict)
+                for key in topic_dict.keys():
+                    topic_list.append(key)
+    return topic_list
+
+
+def get_csv_data_from_bag(input_dir_or_file: str, output_dir: str, topic_list: list = None) -> None:
+    """
+    Extract CSV data from rosbag files and move the CSV files to the specified output directory.
+
+    This function can accept either a directory of rosbag files or a single rosbag file.
+
+    Parameters
+    ----------
+    input_dir_or_file : str
+        The directory containing the rosbag files or a path to a single rosbag file.
+    output_dir : str
+        The directory where the extracted CSV files should be moved.
+    topic_list : list, optional
+        List of topics to be extracted. If not provided, all topics will be extracted.
+
+    Returns
+    -------
+    None
+
+    """
+
+    if os.path.isfile(input_dir_or_file):
+        rosbag_files = [input_dir_or_file]
+    else:
+        # List of rosbag files
+        rosbag_files = glob.glob(os.path.join(input_dir_or_file, '*.bag'))
+
+    # Loop over each rosbag file
+    for rosbag_file in rosbag_files:    # List of rosbag files
+        bag = bagreader(rosbag_file)
+
+        # Get all topics
+        all_topics = get_all_topics([rosbag_file])
+
+        # If a topic list is specified, filter the topics
+        if topic_list is not None:
+            all_topics = [topic for topic in all_topics if topic in topic_list]
+
+        # Create subfolder in output directory with rosbag name (without .bag)
+        rosbag_name = os.path.basename(rosbag_file).replace('.bag', '')
+        rosbag_dir = os.path.join(output_dir, rosbag_name)
+        os.makedirs(rosbag_dir, exist_ok=True)
+
+        # Loop over each topic
+        for topic in all_topics:
+            data = bag.message_by_topic(topic)
+
+            if data:
+                # construct the full destination path, including the file name
+                destination = os.path.join(rosbag_dir, os.path.basename(data))
+
+                # move the file
+                shutil.move(data, destination)
 
     return

@@ -1,66 +1,65 @@
-# robologs
+# robologs-ros-utils
 
-## What is robologs
+## What is robologs-ros-utils
 
-robologs is an open source library of containerized data transformations for the robotics and drone communities. With robologs, users are able to extract and transform slices of sensor data for a variety of use cases:
-
-- Graph a subset of relevant time series signals
-- Extract a subset of images for data labeling, annotation and model training workflows
-- Convert binary data to formats that are supported by common tools
-- Sample streams of sensor data for easier analysis
-- Ingest filtered and transformed data into databases
-
-If you are an engineer or scientist working in robotics, machine learning, computer vision or aerospace then you've probably had to write your own data extraction scripts from data formats such as ROS, PX4, ArduPilot etc. This can be tedious and time-consuming given the complexity of these data formats and their underlying system requirements. Even simple transformations such as converting a rosbag of images to a video, or creating a graph of battery data from a PX4 log can be challenging.
-
-...well, not any more we say! 
+robologs-ros-utils is a collection of utility functions to extract, convert and analyze ROS data. 
 
 ## Python Quickstart<a name="python-quickstart" />
 
-Installing robologs is easy using the pip package manager.
+Installing robologs-ros-utils is easy using the pip package manager.
 
 We suggest that you use a clean environment to avoid any dependency conflicts:
 ```bash
-conda create --name robologs_env python=3.8
-conda activate robologs_env
+pip install robologs-ros-utils
 ```
 
-```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple robologs
+From here, you can use robologs-ros-utils in your Python code as follows:
+
+```python
+from robologs_ros_utils.sources.ros1 import ros_utils
+
+ros_utils.get_images_from_bag(
+         rosbag_path="/path/to/rosbag.bag",
+         output_folder="/output_imgs/",
+         file_format="jpg",
+         create_manifest=True,
+         topics="/camera/image_raw",
+         naming="sequential",
+         resize=[640,480],
+         sample=2,
+         start_time=0,
+         end_time=10)
+```
+## Command Line Utilities
+After you install robologs-ros-utils, you can also use the command line utilities to extract data from rosbag files.
+
+Run the following command to see the available options:
+```bash 
+robologs-ros-utils --help
 ```
 
-From here, you can type commands to transform data from log files. For example, if you want to extract images from a rosbag file:
+### Examples
 
+If you want to extract images from the command line:
 ```bash
-robologs ros get-images --help
+robologs-ros-utils get-images --help
 ```
 
 Or if you want to get metadata from a rosbag file:
 ```bash
-robologs ros get-summary --help
+robologs-ros-utils get-summary --help
 ```
 
 ## Use Docker 
-You can build a local version of the robologs Docker image as follows:
+You can build a local version of the robologs-ros-utils Docker image as follows:
 ```bash
 ./build_image.sh
 ```
 
-And here is how you can run a robologs command inside the Docker image:
+And here is how you can run a robologs-ros-utils command inside the Docker image:
 ```bash
-docker run -v ~/Desktop/scratch/:/input/ -it --rm robologs-image robologs ros get-videos -i /input/some_rosbag.bag -o /input/ --naming rosbag_timestamp --format jpg --save-images
+docker run -v ~/Desktop/scratch/:/input/ -it --rm robologs-ros-utils-image robologs-ros-utils get-videos -i /input/example_bag_small.bag -o /input/ --naming rosbag_timestamp --format jpg --save-images
 ```
-
-
-## Data Formats<a name="data-formats" />
-
-robologs currently supports transformations on the following data formats:
-
-| Format            | Extension | Support
-| ----------------  | --------  | --------
-| ROS               | .bag      | 🛠
-| MCAP              | .mcap     | 🛠 
-| PX4               | .ulg      | 🛠 
-| ArduPilot         | .bin      | 🛠 
 
 Do you have a request for a data format that's not listed above? Raise an issue or join our Slack community and make a request!
 
@@ -77,43 +76,33 @@ If you have any questions, comments, or want to chat, please join [our Slack cha
 # activate poetry shell
 poetry shell
 
+# install dependencies
 poetry update
 
-cd ~/Code/robologs/python/
-#run the tests
+cd ~/Code/robologs-ros-utils/python/
+
+# run the tests
 poetry run coverage run -m --source=robologs_ros_utils pytest tests
+
 # run the coverage report
 poetry run coverage report
+
 # run black -> remove the --check to reformat
 poetry run black --check .
+
 # run my py
-poetry run mypy robologs/sources/
+poetry run mypy robologs_ros_utils/sources/
+
 # run isort -> remove the --check to reformat
 poetry run isort --check-only .
 ```
 
-#### How to release a new version?
-```bash
-# make sure you have permission configured to push to the TestPy repo
-poetry config pypi-token.test-pypi  pypi-AgENdGVzdC5weXBpLm9yZwIkYTJlMzA1NTAtYTc3OC00YWUzLWI5NmUtNDhiNzdiNGExYTc4AAIqWzMsIjZjZTliYzBkLWE3MmEtNDM1My1iMzNjLWJmNjgzMjA1NWQ3YSJdAAAGIKLo5nQ27sWQ_Dt3Itax_kKUBwgpo1cOitiuagbRhjWf 
-
-poetry version prerelease
-
-poetry build
-
-poetry publish -r test-pypi
-
-```
-
-
-poetry version prerelease
-
-We welcome contributions to robologs. Please see our [contribution guide](#) and our [development guide](#) for details.
+We welcome contributions to robologs-ros-utils. Please see our [contribution guide](#) and our [development guide](#) for details.
 
 ### Contributors
 
-<a href="https://github.com/roboto-dev/robologs/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=roboto-dev/robologs" />
+<a href="https://github.com/roboto-ai/robologs-ros-utils/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=roboto-ai/robologs-ros-utils" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).

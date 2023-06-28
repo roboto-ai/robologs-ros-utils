@@ -31,7 +31,7 @@ RUN pip install rospkg
 RUN pip install progressbar
 
 # Copy and install robologs Python module
-ARG ROBOLOGS_SRC_DIR="/robologs"
+ARG ROBOLOGS_SRC_DIR="/robologs-ros-utils"
 RUN mkdir -p ${ROBOLOGS_SRC_DIR}
 COPY ./python ${ROBOLOGS_SRC_DIR}
 RUN pip install ${ROBOLOGS_SRC_DIR}
