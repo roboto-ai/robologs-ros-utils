@@ -6,13 +6,13 @@ This module contains functions to extract data from rosbags.
 import glob
 import logging
 import os
-from typing import Optional, Union, Tuple
+import shutil
+from typing import Optional, Tuple, Union
 
+import click
 import cv2
 import numpy as np
 import pandas as pd
-import shutil
-import click
 from bagpy import bagreader
 from PIL import Image
 from rosbag import Bag
@@ -21,8 +21,7 @@ from rosbags.serde import deserialize_cdr, ros1_to_cdr
 from tqdm import tqdm
 
 from robologs_ros_utils.sources.ros1 import ros_img_tools
-from robologs_ros_utils.utils import file_utils
-from robologs_ros_utils.utils import img_utils
+from robologs_ros_utils.utils import file_utils, img_utils
 
 
 def get_bag_info_from_file(rosbag_path: str) -> dict:
@@ -365,7 +364,14 @@ def get_images_from_bag(
                     os.makedirs(output_images_folder_folder_path)
 
                 if msg.__msgtype__ == "sensor_msgs/msg/Image":
-                    img_encodings = {"rgb8": "RGB", "rgba8": "RGBA", "mono8": "L", "8UC3": "RGB", "bgra8": "RGBA"}
+                    img_encodings = {
+                        "rgb8": "RGB",
+                        "rgba8": "RGBA",
+                        "mono8": "L",
+                        "8UC3": "RGB",
+                        "bgra8": "RGBA",
+                        "bgr8": "RGB",
+                    }
                     cv_image = np.array(Image.frombytes(img_encodings[msg.encoding], (msg.width, msg.height), msg.data))
                     if msg.encoding == "bgra8":
                         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
@@ -391,7 +397,7 @@ def get_images_from_bag(
 
                 if resize:
                     cv_image = img_utils.resize_image(img=cv_image, new_width=resize[0], new_height=resize[1])
-                
+
                 cv2.imwrite(image_path, cv_image)
 
                 if create_manifest:
@@ -506,9 +512,9 @@ def get_clipped_bag_file(
                 if topic not in topic_list:
                     continue
 
-            in_time_range, past_end_time = is_message_within_time_range(time_ns=t.to_nsec(),
-                                                                        start_time_rosbag_ns=start_time,
-                                                                        end_time_rosbag_ns=end_time)
+            in_time_range, past_end_time = is_message_within_time_range(
+                time_ns=t.to_nsec(), start_time_rosbag_ns=start_time, end_time_rosbag_ns=end_time
+            )
 
             # stop iterating over rosbag if we're past the user specified end-time
             if past_end_time:
@@ -560,10 +566,10 @@ def get_csv_data_from_bag(input_dir_or_file: str, output_dir: str, topic_list: l
         rosbag_files = [input_dir_or_file]
     else:
         # List of rosbag files
-        rosbag_files = glob.glob(os.path.join(input_dir_or_file, '*.bag'))
+        rosbag_files = glob.glob(os.path.join(input_dir_or_file, "*.bag"))
 
     # Loop over each rosbag file
-    for rosbag_file in rosbag_files:    # List of rosbag files
+    for rosbag_file in rosbag_files:  # List of rosbag files
         bag = bagreader(rosbag_file)
 
         # Get all topics
@@ -574,7 +580,7 @@ def get_csv_data_from_bag(input_dir_or_file: str, output_dir: str, topic_list: l
             all_topics = [topic for topic in all_topics if topic in topic_list]
 
         # Create subfolder in output directory with rosbag name (without .bag)
-        rosbag_name = os.path.basename(rosbag_file).replace('.bag', '')
+        rosbag_name = os.path.basename(rosbag_file).replace(".bag", "")
         rosbag_dir = os.path.join(output_dir, rosbag_name)
         os.makedirs(rosbag_dir, exist_ok=True)
 

@@ -147,7 +147,7 @@ def get_all_files_of_type_in_directory(input_folder: str, file_format: str) -> l
 
     """
 
-    subfolder_list = glob.glob(f'{input_folder}/*/')
+    subfolder_list = glob.glob(f"{input_folder}/*/")
     file_string = f"./*.{file_format}"
     ll = list()
     # look for files in subfolders

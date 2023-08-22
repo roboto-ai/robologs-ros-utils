@@ -1,4 +1,5 @@
 import os
+
 import click
 
 from robologs_ros_utils.sources.ros1 import ros_utils
@@ -8,7 +9,7 @@ from robologs_ros_utils.utils import file_utils
 def process_topics(ctx, param, value):
     """Callback function to process topics input."""
     if value:
-        return [topic.strip() for topic in value.split(',')]
+        return [topic.strip() for topic in value.split(",")]
     else:
         return None
 
@@ -16,7 +17,9 @@ def process_topics(ctx, param, value):
 @click.command()
 @click.option("--input", "-i", type=str, required=True, help="A single rosbag, or directory containing rosbags")
 @click.option("--output", "-o", type=str, required=True, help="Output directory for CSV files")
-@click.option("--topics", "-t", type=str, default=None, callback=process_topics, help="Comma-separated list of topics to extract")
+@click.option(
+    "--topics", "-t", type=str, default=None, callback=process_topics, help="Comma-separated list of topics to extract"
+)
 def get_csv_data_from_bag(input, output, topics):
     """
     Extract CSV data from rosbag files and move the CSV files to the specified output directory.
