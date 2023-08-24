@@ -26,7 +26,7 @@ def cli(ctx):
 """
         )
     if ctx.invoked_subcommand is None:
-        click.echo("Robologs is an open source collection of sensor data transforms")
+        click.echo("Robologs is an open source collection of ROS-related tools")
         click.echo("Run robologs-ros-utils --help to see a list of available commands")
         click.echo("")
 
