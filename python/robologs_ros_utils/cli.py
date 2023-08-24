@@ -2,11 +2,13 @@ from inspect import getmembers
 
 import click
 
-from robologs_ros_utils.sources.ros1 import (clip_rosbag,
-                                             get_csv_data_from_bag,
-                                             get_images_from_bag,
-                                             get_summary_from_bag,
-                                             get_videos_from_bag)
+from robologs_ros_utils.sources.ros1 import (
+    clip_rosbag,
+    get_csv_data_from_bag,
+    get_images_from_bag,
+    get_summary_from_bag,
+    get_videos_from_bag,
+)
 
 
 @click.group(invoke_without_command=True)

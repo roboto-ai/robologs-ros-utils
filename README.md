@@ -97,6 +97,22 @@ poetry run mypy robologs_ros_utils/sources/
 poetry run isort --check-only .
 ```
 
+# test the CLI locally
+```bash
+# clean local build
+./clean_build.sh
+
+# build pip package
+poetry build
+
+# install pip package
+pip install dist/robologs_ros_utils-XX-none-any.whl
+
+# run the CLI
+robologs-ros-utils --help
+```
+
+
 We welcome contributions to robologs-ros-utils. Please see our [contribution guide](#) and our [development guide](#) for details.
 
 ### Contributors

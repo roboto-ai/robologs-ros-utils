@@ -1,0 +1,47 @@
+name: Publish to TestPyPI
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install Poetry
+      run: pip install poetry
+     
+    - name: Setup test pypi repo
+      run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+
+    - name: Configure Poetry
+      run: poetry config pypi-token.test-pypi ${{ secrets.TEST_PYPI_API_TOKEN }}
+      
+    - name: Navigate to robologs-ros-utils/python
+      run: cd python
+
+    - name: Install project dependencies
+      run: poetry install
+      working-directory: python
+      
+    - name: Run tests
+      run: poetry run coverage run -m --source=robologs_ros_utils pytest tests
+      working-directory: python
+
+    - name: Build package
+      run: poetry build
+      working-directory: python
+
+    - name: Publish package to TestPyPI
+      run: poetry publish -r test-pypi
+      working-directory: python
