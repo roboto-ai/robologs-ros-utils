@@ -9,10 +9,9 @@ import os
 import shutil
 from typing import Optional, Tuple, Union
 
-import click
 import cv2
 import numpy as np
-import pandas as pd
+import rosbag
 from bagpy import bagreader
 from PIL import Image
 from rosbag import Bag
@@ -596,3 +595,70 @@ def get_csv_data_from_bag(input_dir_or_file: str, output_dir: str, topic_list: l
                 shutil.move(data, destination)
 
     return
+
+
+def split_rosbag(input_path: Union[str, os.PathLike], chunks: int, output_folder: Union[str, os.PathLike]) -> None:
+    """
+    Split ROS bag files into smaller chunks.
+
+    Parameters:
+        input_path (Union[str, os.PathLike]): The path to the input .bag file or a folder containing .bag files.
+        chunks (int): The number of chunks to split the bag file into.
+        output_folder (Union[str, os.PathLike]): The folder where the chunked bag files will be saved.
+
+    Returns:
+        None
+    """
+    # Create output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # If the input path is a directory, loop through all files
+    if os.path.isdir(input_path):
+        for filename in os.listdir(input_path):
+            if filename.endswith(".bag"):
+                full_path = os.path.join(input_path, filename)
+                split_single_rosbag(full_path, chunks, output_folder)
+
+    # If the input path is a file, just process that one file
+    elif os.path.isfile(input_path) and input_path.endswith(".bag"):
+        split_single_rosbag(input_path, chunks, output_folder)
+
+    else:
+        print("Invalid input path. Provide either a .bag file or a directory containing .bag files.")
+
+
+def split_single_rosbag(file_in: Union[str, os.PathLike], chunks: int, output_folder: Union[str, os.PathLike]) -> None:
+    """
+    Split a single ROS bag file into smaller chunks.
+
+    Parameters:
+        file_in (Union[str, os.PathLike]): The path to the input .bag file.
+        chunks (int): The number of chunks to split the bag file into.
+        output_folder (Union[str, os.PathLike]): The folder where the chunked bag files will be saved.
+
+    Returns:
+        None
+    """
+    bagfile = rosbag.Bag(file_in)
+    messages = bagfile.get_message_count()
+    m_per_chunk = int(round(float(messages) / float(chunks)))
+    chunk = 0
+    m = 0
+    filename = os.path.basename(file_in)
+    base_name, ext = os.path.splitext(filename)
+
+    outbag_path = os.path.join(output_folder, f"{base_name}_chunk_{chunk:04d}.bag")
+    outbag = rosbag.Bag(outbag_path, "w")
+
+    for topic, msg, t in bagfile.read_messages():
+        if m and m % m_per_chunk == 0:
+            outbag.close()
+            chunk += 1
+            outbag_path = os.path.join(output_folder, f"{base_name}_chunk_{chunk:04d}.bag")
+            outbag = rosbag.Bag(outbag_path, "w")
+
+        outbag.write(topic, msg, t)
+        m += 1
+
+    outbag.close()

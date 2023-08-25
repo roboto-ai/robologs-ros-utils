@@ -175,3 +175,20 @@ def test_get_csv_data_from_bags(request, tmp_path):
 
     assert os.path.exists(csv_topic_path_2)
 
+
+def test_split_rosbag(request, tmp_path):
+
+    input_path = get_image_bag_file_path(request.fspath.dirname, "test_images.bag")
+    output_folder = tmp_path
+
+    ros_utils.split_single_rosbag(file_in=input_path,
+                                  chunks=3,
+                                  output_folder=output_folder)
+
+    list_files = file_utils.get_all_files_of_type_in_directory(output_folder, "bag")
+
+    assert len(list_files) == 3
+
+
+
+
