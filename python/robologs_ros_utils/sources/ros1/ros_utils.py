@@ -40,15 +40,15 @@ def get_bag_info_from_file(rosbag_path: str) -> dict:
         raise Exception(f"{rosbag_path} is not a rosbag.")
 
     try:
-        bag = bagreader(rosbag_path)
+        bag = bagreader(rosbag_path, tmp=True)
 
     except:
         f"Couldn't open rosbag...skipping"
         return dict()
 
     file_stats = os.stat(rosbag_path)
-
     summary_dict = dict()
+    summary_dict["file_name"] = os.path.split(rosbag_path)[1]
     summary_dict["start_time"] = bag.start_time
     summary_dict["end_time"] = bag.end_time
     summary_dict["duration"] = bag.end_time - bag.start_time
@@ -70,11 +70,16 @@ def get_topic_dict(rosbag_metadata_dict: dict) -> dict:
 
 def get_bag_info_from_file_or_folder(input_path: str) -> dict:
     """
+    Recursively searches for rosbag files in the given path and returns a dictionary with their metadata.
+    If a rosbag file is provided, returns the metadata for that file only.
+    If a directory is provided, returns metadata for all rosbag files in that directory and its subdirectories.
+
     Args:
-        input_path (str): Input file path of a rosbag, or folder with multiple rosbags.
+        input_path (str): Input file path of a rosbag, or folder with multiple rosbags, possibly nested.
 
     Returns:
-        dict: Dictionary with rosbag metadata for each rosbag. The key of the dictionary is the rosbag file path.
+        dict: Dictionary with rosbag metadata for each rosbag found.
+              The key of the dictionary is the rosbag's absolute file path.
 
     """
 
@@ -83,8 +88,11 @@ def get_bag_info_from_file_or_folder(input_path: str) -> dict:
     if input_path.endswith(".bag"):
         rosbag_info_dict[os.path.abspath(input_path)] = get_bag_info_from_file(input_path)
     else:
-        for filename in sorted(glob.glob(os.path.join(input_path, "./*.bag"))):
-            rosbag_info_dict[os.path.abspath(filename)] = get_bag_info_from_file(filename)
+        for root, dirs, files in os.walk(input_path):
+            for filename in files:
+                if filename.endswith(".bag"):
+                    full_path = os.path.join(root, filename)
+                    rosbag_info_dict[os.path.abspath(full_path)] = get_bag_info_from_file(full_path)
 
     return rosbag_info_dict
 
