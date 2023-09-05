@@ -12,19 +12,22 @@ from robologs_ros_utils.utils import file_utils
 @click.option("--output", "-o", type=str, required=True, help="Output directory, or json path")
 @click.option("--file-name", "-f", type=str, default="rosbag_metadata.json", help="Output file name")
 @click.option("--split", "-s", is_flag=True, help="Save individual metadata files next to each rosbag")
-def get_summary(input, output, file_name, split):
+@click.option("--hidden", "-h", is_flag=True, help="Output hidden JSON files with '.' prefix")
+def get_summary(input, output, file_name, split, hidden):
     """Get summary of Rosbag1 data"""
 
     input_path = input
     output_path = output
-    output_filename = file_name
+    output_filename = file_name if not hidden else "." + file_name
 
     rosbag_info_dict = ros_utils.get_bag_info_from_file_or_folder(input_path=input_path)
 
     if split:
         for bag_path, bag_info in rosbag_info_dict.items():
             bag_dir = os.path.dirname(bag_path)
-            bag_name = "." + os.path.basename(bag_path).replace(".bag", ".json")
+            bag_name = os.path.basename(bag_path).replace(".bag", ".json")
+            if hidden:
+                bag_name = "." + bag_name
             output_file_path = os.path.join(bag_dir, bag_name)
             file_utils.save_json(data=bag_info, path=output_file_path)
     else:
