@@ -1,7 +1,6 @@
 import click
 
-from . import (clip_rosbag, get_images_from_bag, get_summary_from_bag,
-               get_videos_from_bag, split_rosbag)
+from . import clip_rosbag, get_images_from_bag, get_summary_from_bag, get_videos_from_bag, split_rosbag
 
 
 @click.group()
