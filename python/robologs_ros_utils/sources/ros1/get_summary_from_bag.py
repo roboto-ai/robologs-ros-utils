@@ -26,7 +26,7 @@ def get_summary(input, output, file_name, split, hidden):
     if split:
         for bag_path, bag_info in rosbag_info_dict.items():
             bag_dir = os.path.dirname(bag_path)
-            bag_name = os.path.basename(bag_path).replace(".bag", ".json")
+            bag_name = os.path.basename(bag_path) + ".json"
             if hidden:
                 bag_name = "." + bag_name
 

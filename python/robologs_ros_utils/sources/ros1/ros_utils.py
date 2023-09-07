@@ -52,7 +52,7 @@ def get_bag_info_from_file(rosbag_path: str) -> dict:
     summary_dict["start_time"] = bag.start_time
     summary_dict["end_time"] = bag.end_time
     summary_dict["duration"] = bag.end_time - bag.start_time
-    summary_dict["file_size_mb"] = file_stats.st_size / (1024 * 1024)
+    summary_dict["file_size_mb"] = str(file_stats.st_size / (1024 * 1024))
     summary_dict["topics"] = bag.topic_table.to_dict("records")
 
     return summary_dict
@@ -118,7 +118,7 @@ def create_manifest_entry_dict(msg_timestamp: int, rosbag_timestamp: int, file_p
     }
 
 
-def get_image_topic_types():
+def get_image_topic_types() -> list:
     """
     Returns:
 
@@ -177,7 +177,7 @@ def replace_ros_topic_name(topic_name: str, replace_character: str = "_") -> str
     return topic_name.replace("/", replace_character)[1:]
 
 
-def get_filter_fraction(start_time: Optional[float], end_time: Optional[float], start_rosbag: float, end_rosbag: float):
+def get_filter_fraction(start_time: Optional[float], end_time: Optional[float], start_rosbag: float, end_rosbag: float) -> Optional[float]:
     """
     Args:
         start_time (float or None):
@@ -191,7 +191,7 @@ def get_filter_fraction(start_time: Optional[float], end_time: Optional[float], 
     rosbag_duration = end_rosbag - start_rosbag
 
     if rosbag_duration <= 0:
-        return
+        return None
 
     if start_time and end_time:
         return float((end_time - start_time) / rosbag_duration)
@@ -204,6 +204,8 @@ def get_filter_fraction(start_time: Optional[float], end_time: Optional[float], 
 
     if not end_time and not start_time:
         return 1
+
+    return None
 
 
 def check_if_in_time_range(t: float, start_time: float, end_time: float) -> bool:
@@ -238,8 +240,10 @@ def check_if_in_time_range(t: float, start_time: float, end_time: float) -> bool
     if not start_time and not end_time:
         return True
 
+    return False
 
-def get_name_img_manifest():
+
+def get_name_img_manifest() -> str:
     """
     Returns:
 
@@ -277,7 +281,7 @@ def get_images_from_bag(
     sample: Optional[int] = None,
     start_time: Optional[float] = None,
     end_time: Optional[float] = None,
-):
+) -> list:
     """
     Args:
         rosbag_path (str):
