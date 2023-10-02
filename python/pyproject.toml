@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "robologs-ros-utils"
-version = "0.1.1a45"
+version = "0.1.1a47"
 description = "robologs-ros-utils is an open source library of containerized data transformations for the robotics and drone communities"
 authors = ["roboto.ai <info@roboto.ai>"]
 license = "Apache-2.0"

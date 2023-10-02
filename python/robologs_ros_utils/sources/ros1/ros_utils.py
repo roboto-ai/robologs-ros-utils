@@ -330,6 +330,7 @@ def get_images_from_bag(
             start_rosbag=rosbag_metadata_dict["start_time"],
             end_rosbag=rosbag_metadata_dict["end_time"],
         )
+
         filter_duration = 0 if filter_duration < 0 else filter_duration
 
         nr_imgs_to_extract = int(total_number_of_images * filter_duration)
@@ -357,10 +358,10 @@ def get_images_from_bag(
                 topic = connection.topic
                 msg = deserialize_cdr(ros1_to_cdr(rawdata, connection.msgtype), connection.msgtype)
                 rosbag_time_s = t * 1e-9
-                if not check_if_in_time_range(rosbag_time_s, start_time, end_time):
+                time_from_start_s = rosbag_time_s - rosbag_metadata_dict["start_time"]
+                if not check_if_in_time_range(time_from_start_s, start_time, end_time):
                     topic_msg_counter_dict[topic] += 1
                     continue
-
                 if sample and not (topic_msg_counter_dict[topic] % sample) == 0:
                     topic_msg_counter_dict[topic] += 1
                     continue
