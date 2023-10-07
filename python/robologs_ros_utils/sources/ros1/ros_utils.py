@@ -464,7 +464,7 @@ def is_message_within_time_range(
         start_time_rosbag_ns (int):
         end_time_rosbag_ns (int):
 
-    Returns: Turple of booleans
+    Returns: Tuple of booleans
 
     """
 
