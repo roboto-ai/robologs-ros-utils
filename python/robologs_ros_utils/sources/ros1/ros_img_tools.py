@@ -66,7 +66,15 @@ def create_video_from_images(input_path, output_path, output_name="video.mp4", f
     output_video_path = os.path.join(output_path, output_name)
     output_video_path_temp = os.path.join(output_path, "temp.mp4")
 
-    for filename in sorted(glob.glob(os.path.join(input_path, "./*.jpg"))):
+    img_list = sorted(glob.glob(os.path.join(input_path, "./*.jpg")))
+
+    if not img_list:
+        sorted(glob.glob(os.path.join(input_path, "./*.png")))
+
+    if not img_list:
+        return 
+
+    for filename in img_list:
         img = cv2.imread(filename)
         if resize:
             img = cv2.resize(img, (0, 0), fx=resize, fy=resize, interpolation=cv2.INTER_LANCZOS4)
