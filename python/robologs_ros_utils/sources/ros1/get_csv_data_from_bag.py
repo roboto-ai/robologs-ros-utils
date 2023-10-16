@@ -1,9 +1,6 @@
-import os
-
 import click
 
 from robologs_ros_utils.sources.ros1 import ros_utils
-from robologs_ros_utils.utils import file_utils
 
 
 def process_topics(ctx, param, value):

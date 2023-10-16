@@ -1,9 +1,10 @@
 def get_width_height_from_args(resize_arg: str) -> list:
     """
+    Get width and height from resize argument
     Args:
         resize_arg (str):
 
-    Returns:
+    Returns: list of width and height
 
     """
     if not resize_arg:
