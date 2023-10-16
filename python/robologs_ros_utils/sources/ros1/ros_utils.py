@@ -1,20 +1,19 @@
-"""Rosbag utilities
+"""Rosbag Utilities
 
-This module contains functions to extract data from rosbags.
+This module contains functions to extract and handle data from ROS bag files.
 
 """
+
 import glob
 import logging
 import os
 import shutil
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
-#import rosbag
 from bagpy import bagreader
 from PIL import Image
-#from rosbag import Bag
 from rosbags.rosbag1 import Reader
 from rosbags.serde import deserialize_cdr, ros1_to_cdr
 from tqdm import tqdm
@@ -25,14 +24,17 @@ from robologs_ros_utils.utils import file_utils, img_utils
 
 def get_bag_info_from_file(rosbag_path: str) -> dict:
     """
+    Retrieve metadata from a specified ROS bag file.
+
     Args:
-        rosbag_path (str): Input file path rosbag.
+        rosbag_path (str): The file path to the rosbag.
 
     Returns:
-        dict: Dictionary with rosbag metadata.
+        dict: A dictionary containing rosbag metadata such as start time, end time, duration, size, and topics.
 
+    Raises:
+        Exception: If the rosbag file does not exist or the file provided is not a valid rosbag.
     """
-
     if not os.path.exists(rosbag_path):
         raise Exception(f"{rosbag_path} does not exist.")
 
@@ -41,49 +43,53 @@ def get_bag_info_from_file(rosbag_path: str) -> dict:
 
     try:
         bag = bagreader(rosbag_path, tmp=True)
-
-    except:
-        f"Couldn't open rosbag...skipping"
+    except Exception as e:
+        logging.error(f"Couldn't open rosbag due to error: {e}. Skipping...")
         return dict()
 
     file_stats = os.stat(rosbag_path)
-    summary_dict = dict()
-    summary_dict["file_name"] = os.path.split(rosbag_path)[1]
-    summary_dict["start_time"] = bag.start_time
-    summary_dict["end_time"] = bag.end_time
-    summary_dict["duration"] = bag.end_time - bag.start_time
-    summary_dict["file_size_mb"] = str(file_stats.st_size / (1024 * 1024))
-    summary_dict["topics"] = bag.topic_table.to_dict("records")
+    summary_dict = {
+        "file_name": os.path.split(rosbag_path)[1],
+        "start_time": bag.start_time,
+        "end_time": bag.end_time,
+        "duration": bag.end_time - bag.start_time,
+        "file_size_mb": str(file_stats.st_size / (1024 * 1024)),
+        "topics": bag.topic_table.to_dict("records"),
+    }
 
     return summary_dict
 
 
 def get_topic_dict(rosbag_metadata_dict: dict) -> dict:
-    topic_dict = dict()
+    """
+    Extracts the topic information from the rosbag metadata dictionary.
 
-    if "topics" in rosbag_metadata_dict:
-        for entry in rosbag_metadata_dict["topics"]:
-            topic_dict[entry["Topics"]] = entry
+    Args:
+        rosbag_metadata_dict (dict): A dictionary containing rosbag metadata.
+
+    Returns:
+        dict: A dictionary where keys are topic names and values are metadata about each topic.
+    """
+    topic_dict = {}
+
+    for entry in rosbag_metadata_dict.get("topics", []):
+        topic_dict[entry["Topics"]] = entry
 
     return topic_dict
 
 
 def get_bag_info_from_file_or_folder(input_path: str) -> dict:
     """
-    Recursively searches for rosbag files in the given path and returns a dictionary with their metadata.
-    If a rosbag file is provided, returns the metadata for that file only.
-    If a directory is provided, returns metadata for all rosbag files in that directory and its subdirectories.
+    Retrieves metadata from a rosbag file or recursively from rosbag files within a given directory.
 
     Args:
-        input_path (str): Input file path of a rosbag, or folder with multiple rosbags, possibly nested.
+        input_path (str): The file path to a rosbag or a directory containing one or more rosbag files.
 
     Returns:
-        dict: Dictionary with rosbag metadata for each rosbag found.
-              The key of the dictionary is the rosbag's absolute file path.
+        dict: A dictionary where each key is the absolute path of a rosbag, and the value is its corresponding metadata.
 
     """
-
-    rosbag_info_dict = dict()
+    rosbag_info_dict = {}
 
     if input_path.endswith(".bag"):
         rosbag_info_dict[os.path.abspath(input_path)] = get_bag_info_from_file(input_path)
@@ -99,14 +105,16 @@ def get_bag_info_from_file_or_folder(input_path: str) -> dict:
 
 def create_manifest_entry_dict(msg_timestamp: int, rosbag_timestamp: int, file_path: str, index: int) -> dict:
     """
+    Create a dictionary entry for the manifest, containing metadata about the message.
+
     Args:
-        msg_timestamp (int):
-        rosbag_timestamp (int):
-        file_path (str):
-        index (int):
+        msg_timestamp (int): The timestamp from the message.
+        rosbag_timestamp (int): The timestamp from the rosbag.
+        file_path (str): The file path of the image or message.
+        index (int): The index of the message in the topic.
 
-    Returns: dict
-
+    Returns:
+        dict: A dictionary containing metadata about the message.
     """
     _, img_name = os.path.split(file_path)
     return {
@@ -120,152 +128,152 @@ def create_manifest_entry_dict(msg_timestamp: int, rosbag_timestamp: int, file_p
 
 def get_image_topic_types() -> list:
     """
-    Returns:
+    Retrieve the list of image topic types.
 
+    Returns:
+        list: A list of strings representing ROS image topic types.
     """
     return ["sensor_msgs/CompressedImage", "sensor_msgs/Image"]
 
 
 def get_topic_names_of_type(all_topics: list, filter_topic_types: list) -> list:
     """
+    Filter topic names based on the specified topic types.
+
     Args:
-        all_topics (list):
-        filter_topic_types (list):
+        all_topics (list): A list of dictionaries, each containing information about a topic.
+        filter_topic_types (list): A list of strings representing the topic types to filter by.
 
     Returns:
-
+        list: A list of topic names that match the filtered topic types.
     """
     return [x["Topics"] for x in all_topics if x["Types"] in filter_topic_types]
 
 
 def get_image_name_from_timestamp(timestamp: int, file_format: str = "jpg") -> str:
     """
+    Generate an image file name based on the timestamp.
+
     Args:
-        timestamp (int):
-        file_format (str):
+        timestamp (int): The timestamp to be incorporated into the image file name.
+        file_format (str): The image file format. Defaults to "jpg".
 
     Returns:
-
+        str: A string representing the image file name.
     """
-    img_name = f"{str(timestamp)}.{file_format}"
-    return img_name
+    return f"{timestamp}.{file_format}"
 
 
 def get_image_name_from_index(index: int, file_format: str = "jpg", zero_padding: int = 6) -> str:
     """
+    Generate an image file name based on the index.
+
     Args:
-        index ():
-        file_format ():
-        zero_padding ():
+        index (int): The index to be incorporated into the image file name.
+        file_format (str): The image file format. Defaults to "jpg".
+        zero_padding (int): The number of zeros used to pad the index in the file name. Defaults to 6.
 
     Returns:
-
+        str: A string representing the image file name.
     """
-    img_name = f"{str(index).zfill(zero_padding)}.{file_format}"
-    return img_name
+    return f"{str(index).zfill(zero_padding)}.{file_format}"
 
 
 def replace_ros_topic_name(topic_name: str, replace_character: str = "_") -> str:
     """
+    Replace slashes in a ROS topic name with the specified character.
+
     Args:
-        topic_name ():
-        replace_character ():
+        topic_name (str): The ROS topic name to be modified.
+        replace_character (str): The character to replace slashes with. Defaults to "_".
 
     Returns:
-
+        str: The topic name with slashes replaced by the specified character.
     """
-    return topic_name.replace("/", replace_character)[1:]
+    return topic_name.replace("/", replace_character).lstrip(replace_character)
 
 
-def get_filter_fraction(start_time: Optional[float], end_time: Optional[float], start_rosbag: float, end_rosbag: float) -> Optional[float]:
+def get_filter_fraction(
+    start_time: Optional[float], end_time: Optional[float], start_rosbag: float, end_rosbag: float
+) -> Optional[float]:
     """
+    Calculate the fraction of the rosbag duration based on the provided start and end times.
+
     Args:
-        start_time (float or None):
-        end_time (float or None):
-        start_rosbag (float):
-        end_rosbag (float):
+        start_time (Optional[float]): The start time in seconds from the beginning of the rosbag.
+        end_time (Optional[float]): The end time in seconds until the end of the rosbag.
+        start_rosbag (float): The start time of the rosbag in seconds.
+        end_rosbag (float): The end time of the rosbag in seconds.
 
     Returns:
-
+        Optional[float]: The fraction of the rosbag that is covered by the start and end times, if applicable; otherwise, None.
     """
     rosbag_duration = end_rosbag - start_rosbag
 
     if rosbag_duration <= 0:
         return None
 
-    if start_time and end_time:
-        return float((end_time - start_time) / rosbag_duration)
+    if start_time is not None and end_time is not None:
+        return (end_time - start_time) / rosbag_duration
 
-    if start_time and not end_time:
-        return float((end_rosbag - start_time) / rosbag_duration)
+    if start_time is not None:
+        return (end_rosbag - start_time) / rosbag_duration
 
-    if end_time and not start_time:
-        return float((end_time - start_rosbag) / rosbag_duration)
+    if end_time is not None:
+        return (end_time - start_rosbag) / rosbag_duration
 
-    if not end_time and not start_time:
-        return 1
-
-    return None
+    return 1.0  # if neither start_time nor end_time is specified, the whole rosbag is considered.
 
 
-def check_if_in_time_range(t: float, start_time: float, end_time: float) -> bool:
+def check_if_in_time_range(t: float, start_time: Optional[float], end_time: Optional[float]) -> bool:
     """
+    Check if a given time is within the specified time range.
+
     Args:
-        t (float):
-        start_time (float):
-        end_time (float):
+        t (float): The time to check.
+        start_time (Optional[float]): The start of the time range.
+        end_time (Optional[float]): The end of the time range.
 
     Returns:
-
+        bool: True if 't' is in the range specified by 'start_time' and 'end_time', False otherwise.
     """
 
-    if start_time and end_time:
-        if t >= start_time and t <= end_time:
-            return True
-        else:
-            return False
+    if start_time is not None and t < start_time:
+        return False
 
-    if not start_time and end_time:
-        if t <= end_time:
-            return True
-        else:
-            return False
+    if end_time is not None and t > end_time:
+        return False
 
-    if start_time and not end_time:
-        if t >= start_time:
-            return True
-        else:
-            return False
-
-    if not start_time and not end_time:
-        return True
-
-    return False
+    return True  # 't' is in the range if it hasn't failed any of the above conditions.
 
 
 def get_name_img_manifest() -> str:
     """
-    Returns:
+    Get the standard file name for the image manifest file.
 
+    Returns:
+        str: The file name of the image manifest.
     """
     return "img_manifest.json"
 
 
 def get_video_from_image_folder(folder: str, save_imgs: bool = True) -> None:
     """
+    Create a video from images located in a specified folder.
+
     Args:
-        folder (str):
-        delete_imgs (bool):
+        folder (str): The directory containing the images.
+        save_imgs (bool): If False, the original images are deleted after the video is created. Defaults to True.
 
     Returns:
-
+        None
     """
     img_manifest = file_utils.read_json(os.path.join(folder, get_name_img_manifest()))
     frame_rate = round(img_manifest["topic"]["Frequency"], 2)
     ros_img_tools.create_video_from_images(input_path=folder, output_path=folder, frame_rate=frame_rate)
 
     if not save_imgs:
-        file_utils.delete_files_of_type(folder)
+        file_utils.delete_files_of_type(folder, file_extension=".jpg")  # assuming the images are in '.jpg' format
 
     return
 
@@ -274,29 +282,31 @@ def get_images_from_bag(
     rosbag_path: str,
     output_folder: str,
     file_format: str = "jpg",
-    topics: Optional[list] = None,
+    topics: Optional[List[str]] = None,
     create_manifest: bool = True,
     naming: str = "sequential",
-    resize: Optional[list] = None,
+    resize: Optional[List[int]] = None,
     sample: Optional[int] = None,
     start_time: Optional[float] = None,
     end_time: Optional[float] = None,
-) -> list:
+) -> List[str]:
     """
+    Extract images from a ROS bag file, with various filtering and configuration options.
+
     Args:
-        rosbag_path (str):
-        output_folder (str):
-        file_format (str):
-        topics (list):
-        create_manifest (bool):
-        naming (str):
-        resize (list):
-        sample (int):
-        start_time (float):
-        end_time (float):
+        rosbag_path (str): Path to the ROS bag file.
+        output_folder (str): Directory where the extracted images will be saved.
+        file_format (str): Image format for saved files (default is "jpg").
+        topics (Optional[List[str]]): List of ROS topics to extract images from. If None, auto-detects image topics.
+        create_manifest (bool): Whether to create a manifest file for the extracted images.
+        naming (str): Naming scheme for the saved image files ("sequential", "rosbag_timestamp", or "msg_timestamp").
+        resize (Optional[List[int]]): If specified, resizes images to [width, height].
+        sample (Optional[int]): If specified, only one out of 'sample' images will be extracted.
+        start_time (Optional[float]): Start time for extracting messages from the rosbag (in seconds).
+        end_time (Optional[float]): End time for extracting messages from the rosbag (in seconds).
 
-    Returns: None
-
+    Returns:
+        List[str]: List of paths to directories containing the extracted images, one for each topic.
     """
 
     rosbag_metadata_dict = get_bag_info_from_file(rosbag_path=rosbag_path)
@@ -447,8 +457,17 @@ def get_images_from_bag(
     return output_imgs_folder_list
 
 
-def convert_offset_s_to_rosbag_ns(offset_s: int, first_rosbag_time_ns: int):
+def convert_offset_s_to_rosbag_ns(offset_s: int, first_rosbag_time_ns: int) -> int:
+    """
+    Convert a time offset in seconds to nanoseconds and add it to the timestamp of the first entry in the rosbag.
 
+    Args:
+        offset_s (int): Time offset in seconds.
+        first_rosbag_time_ns (int): Timestamp of the first entry in the rosbag in nanoseconds.
+
+    Returns:
+        int: New timestamp in nanoseconds.
+    """
     offset_ns = int(offset_s * 1e9)
     return offset_ns + first_rosbag_time_ns
 
@@ -457,91 +476,108 @@ def is_message_within_time_range(
     time_ns: int, start_time_rosbag_ns: Optional[int] = None, end_time_rosbag_ns: Optional[int] = None
 ) -> Tuple[bool, bool]:
     """
-    This function checks if a timestamp is withing a specified timerange and returns True or False if we are. It also
-    returns a second boolean to indicate if we are past the end time. This can be used to break out of the loop early.
+    Check if a ROS message timestamp falls within a specified time range.
+
     Args:
-        time_ns (int):
-        start_time_rosbag_ns (int):
-        end_time_rosbag_ns (int):
+        time_ns (int): The message's timestamp in nanoseconds.
+        start_time_rosbag_ns (Optional[int]): The start of the time range in nanoseconds.
+        end_time_rosbag_ns (Optional[int]): The end of the time range in nanoseconds.
 
-    Returns: Tuple of booleans
-
+    Returns:
+        Tuple[bool, bool]:
+            - True if the timestamp is within the range, False otherwise.
+            - True if the timestamp exceeds the end_time, False otherwise.
     """
 
-    if start_time_rosbag_ns:
-        if time_ns < start_time_rosbag_ns:
-            return False, False
+    # Check if the message is before the start of the desired time range
+    if start_time_rosbag_ns is not None and time_ns < start_time_rosbag_ns:
+        return False, False
 
-    if end_time_rosbag_ns:
-        if time_ns > end_time_rosbag_ns:
-            return False, True
+    # Check if the message is after the end of the desired time range
+    if end_time_rosbag_ns is not None and time_ns > end_time_rosbag_ns:
+        return False, True
 
     return True, False
 
 
-def get_clipped_bag_file(
-    input_bag_path: str,
-    output_bag_path: str,
-    topic_list: Optional[list] = None,
-    start_time: Optional[Union[float, int]] = None,
-    end_time: Optional[Union[float, int]] = None,
-    timestamp_type: str = "rosbag_ns",
-):
+# def get_clipped_bag_file(
+#     input_bag_path: str,
+#     output_bag_path: str,
+#     topic_list: Optional[List[str]] = None,
+#     start_time: Optional[Union[float, int]] = None,
+#     end_time: Optional[Union[float, int]] = None,
+#     timestamp_type: str = "rosbag_ns",
+# ) -> None:
+#     """
+#     Create a clipped rosbag file from an input bag, filtered by topic and time range.
+#
+#     Args:
+#         input_bag_path (str): Path to the input rosbag file.
+#         output_bag_path (str): Path where the new clipped bag should be written.
+#         topic_list (Optional[List[str]]): List of string topics to be included in the clipped bag.
+#         start_time (Optional[Union[float, int]]): The start time from which to include messages.
+#         end_time (Optional[Union[float, int]]): The end time until which to include messages.
+#         timestamp_type (str): Type of the provided timestamps, "rosbag_ns" for nanoseconds and
+#                               "offset_s" for seconds offset.
+#
+#     Raises:
+#         Exception: If an invalid timestamp_type is provided.
+#
+#     Returns:
+#         None
+#     """
+#
+#     if timestamp_type not in ["rosbag_ns", "offset_s"]:
+#         raise Exception(f"Robologs: invalid timestamp_type parameter: {timestamp_type}")
+#
+#     with Bag(output_bag_path, "w") as outbag:
+#         msg_counter = 0
+#         first_time_stamp = -1
+#         for topic, msg, t in Bag(input_bag_path).read_messages():
+#             if first_time_stamp < 0:
+#                 first_time_stamp = t.to_nsec()
+#                 if timestamp_type == "offset_s":
+#                     if start_time:
+#                         start_time = convert_offset_s_to_rosbag_ns(
+#                             offset_s=start_time, first_rosbag_time_ns=first_time_stamp
+#                         )
+#
+#                     if end_time:
+#                         end_time = convert_offset_s_to_rosbag_ns(
+#                             offset_s=end_time, first_rosbag_time_ns=first_time_stamp
+#                         )
+#
+#             if topic_list:
+#                 if topic not in topic_list:
+#                     continue
+#
+#             in_time_range, past_end_time = is_message_within_time_range(
+#                 time_ns=t.to_nsec(), start_time_rosbag_ns=start_time, end_time_rosbag_ns=end_time
+#             )
+#
+#             # stop iterating over rosbag if we're past the user specified end-time
+#             if past_end_time:
+#                 break
+#
+#             if not in_time_range:
+#                 continue
+#
+#             msg_counter += 1
+#             outbag.write(topic, msg, t)
+#
+#     return
+
+
+def get_all_topics(rosbag_list: List[str]) -> List[str]:
     """
+    Retrieve all unique topics from a list of rosbag files.
+
     Args:
-        input_bag_path ():
-        output_bag_path ():
-        topic_list ():
-        start_time ():
-        end_time ():
-        timestamp_type ():
+        rosbag_list (List[str]): List of rosbag file paths.
 
     Returns:
-
+        List[str]: List of unique topics across all provided rosbag files.
     """
-
-    if timestamp_type not in ["rosbag_ns", "offset_s"]:
-        raise Exception(f"Robologs: invalid timestamp_type parameter: {timestamp_type}")
-
-    with Bag(output_bag_path, "w") as outbag:
-        msg_counter = 0
-        first_time_stamp = -1
-        for topic, msg, t in Bag(input_bag_path).read_messages():
-            if first_time_stamp < 0:
-                first_time_stamp = t.to_nsec()
-                if timestamp_type == "offset_s":
-                    if start_time:
-                        start_time = convert_offset_s_to_rosbag_ns(
-                            offset_s=start_time, first_rosbag_time_ns=first_time_stamp
-                        )
-
-                    if end_time:
-                        end_time = convert_offset_s_to_rosbag_ns(
-                            offset_s=end_time, first_rosbag_time_ns=first_time_stamp
-                        )
-
-            if topic_list:
-                if topic not in topic_list:
-                    continue
-
-            in_time_range, past_end_time = is_message_within_time_range(
-                time_ns=t.to_nsec(), start_time_rosbag_ns=start_time, end_time_rosbag_ns=end_time
-            )
-
-            # stop iterating over rosbag if we're past the user specified end-time
-            if past_end_time:
-                break
-
-            if not in_time_range:
-                continue
-
-            msg_counter += 1
-            outbag.write(topic, msg, t)
-
-    return
-
-
-def get_all_topics(rosbag_list):
     topic_list = list()
     for rosbag_file in rosbag_list:
         summary_dict = get_bag_info_from_file(rosbag_file)
@@ -608,70 +644,3 @@ def get_csv_data_from_bag(input_dir_or_file: str, output_dir: str, topic_list: l
                 shutil.move(data, destination)
 
     return
-
-
-# def split_rosbag(input_path: Union[str, os.PathLike], chunks: int, output_folder: Union[str, os.PathLike]) -> None:
-#     """
-#     Split ROS bag files into smaller chunks.
-#
-#     Parameters:
-#         input_path (Union[str, os.PathLike]): The path to the input .bag file or a folder containing .bag files.
-#         chunks (int): The number of chunks to split the bag file into.
-#         output_folder (Union[str, os.PathLike]): The folder where the chunked bag files will be saved.
-#
-#     Returns:
-#         None
-#     """
-#     # Create output folder if it doesn't exist
-#     if not os.path.exists(output_folder):
-#         os.makedirs(output_folder)
-#
-#     # If the input path is a directory, loop through all files
-#     if os.path.isdir(input_path):
-#         for filename in os.listdir(input_path):
-#             if filename.endswith(".bag"):
-#                 full_path = os.path.join(input_path, filename)
-#                 split_single_rosbag(full_path, chunks, output_folder)
-#
-#     # If the input path is a file, just process that one file
-#     elif os.path.isfile(input_path) and input_path.endswith(".bag"):
-#         split_single_rosbag(input_path, chunks, output_folder)
-#
-#     else:
-#         print("Invalid input path. Provide either a .bag file or a directory containing .bag files.")
-
-
-# def split_single_rosbag(file_in: Union[str, os.PathLike], chunks: int, output_folder: Union[str, os.PathLike]) -> None:
-#     """
-#     Split a single ROS bag file into smaller chunks.
-#
-#     Parameters:
-#         file_in (Union[str, os.PathLike]): The path to the input .bag file.
-#         chunks (int): The number of chunks to split the bag file into.
-#         output_folder (Union[str, os.PathLike]): The folder where the chunked bag files will be saved.
-#
-#     Returns:
-#         None
-#     """
-#     bagfile = rosbag.Bag(file_in)
-#     messages = bagfile.get_message_count()
-#     m_per_chunk = int(round(float(messages) / float(chunks)))
-#     chunk = 0
-#     m = 0
-#     filename = os.path.basename(file_in)
-#     base_name, ext = os.path.splitext(filename)
-#
-#     outbag_path = os.path.join(output_folder, f"{base_name}_chunk_{chunk:04d}.bag")
-#     outbag = rosbag.Bag(outbag_path, "w")
-#
-#     for topic, msg, t in bagfile.read_messages():
-#         if m and m % m_per_chunk == 0:
-#             outbag.close()
-#             chunk += 1
-#             outbag_path = os.path.join(output_folder, f"{base_name}_chunk_{chunk:04d}.bag")
-#             outbag = rosbag.Bag(outbag_path, "w")
-#
-#         outbag.write(topic, msg, t)
-#         m += 1
-#
-#     outbag.close()

@@ -1,13 +1,9 @@
 import click
 
-from robologs_ros_utils.sources.ros1 import (
-    clip_rosbag,
-    get_csv_data_from_bag,
-    get_images_from_bag,
-    get_summary_from_bag,
-    get_videos_from_bag,
-    split_rosbag,
-)
+from robologs_ros_utils.sources.ros1 import (get_csv_data_from_bag,
+                                             get_images_from_bag,
+                                             get_summary_from_bag,
+                                             get_videos_from_bag)
 
 
 @click.group(invoke_without_command=True)
@@ -33,9 +29,7 @@ def cli(ctx):
 cli.add_command(get_images_from_bag.get_images)
 cli.add_command(get_videos_from_bag.get_videos)
 cli.add_command(get_summary_from_bag.get_summary)
-cli.add_command(clip_rosbag.clip_rosbag)
 cli.add_command(get_csv_data_from_bag.get_csv_data_from_bag)
-cli.add_command(split_rosbag.split_rosbag)
 
 
 def main():

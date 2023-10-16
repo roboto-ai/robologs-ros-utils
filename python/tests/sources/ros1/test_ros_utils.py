@@ -75,55 +75,6 @@ def test_convert_offset_s_to_rosbag_ns():
            1649764528071146477 + int(10*1e9)
 
 
-#def test_get_cropped_bag_file(request, tmp_path):
-#    input_path = get_image_bag_file_path(request.fspath.dirname, "test_images.bag")
-#    output_path = os.path.join(tmp_path, "output.bag")
-#    print(output_path)
-#
-#    topic_list = ["/alphasense/cam0/image_raw"]
-#
-#    assert os.path.exists(tmp_path)
-#
-#    assert not os.path.exists(output_path)
-#
-#    ros_utils.get_clipped_bag_file(input_bag_path=input_path,
-#                                   output_bag_path=output_path,
-#                                   topic_list=topic_list)
-#
-#    assert os.path.exists(output_path)
-#
-#    summary_dict = ros_utils.get_bag_info_from_file(output_path)
-#    topics = [x["Topics"] for x in summary_dict["topics"]]
-#
-#    assert topics == ["/alphasense/cam0/image_raw"]
-#
-#    output_path_t = os.path.join(tmp_path, "output_.bag")
-#
-#    ros_utils.get_clipped_bag_file(input_bag_path=output_path,
-#                                   output_bag_path=output_path_t,
-#                                   start_time=1649764528171137838,
-#                                   end_time=1649764528246129638)
-#
-#    summary_dict = ros_utils.get_bag_info_from_file(output_path_t)
-#
-#    assert summary_dict["topics"][0]["Message Count"] == 4
-#
-#    ros_utils.get_clipped_bag_file(input_bag_path=output_path,
-#                                   output_bag_path=output_path_t,
-#                                   start_time=0,
-#                                   end_time=0.1,
-#                                   timestamp_type="offset_s")
-#
-#    summary_dict = ros_utils.get_bag_info_from_file(output_path_t)
-#
-#    assert summary_dict["topics"][0]["Message Count"] == 5
-#
-#    with pytest.raises(Exception):
-#        ros_utils.get_clipped_bag_file(input_bag_path=output_path,
-#                                       output_bag_path=output_path_t,
-#                                       timestamp_type="weird_type")
-
-
 def test_get_images_from_bag(request, tmp_path):
     input_path = get_image_bag_file_path(request.fspath.dirname, "test_images.bag")
 
@@ -174,21 +125,3 @@ def test_get_csv_data_from_bags(request, tmp_path):
                                     output_dir=output_folder)
 
     assert os.path.exists(csv_topic_path_2)
-
-
-#def test_split_rosbag(request, tmp_path):
-#
-#    input_path = get_image_bag_file_path(request.fspath.dirname, "test_images.bag")
-#    output_folder = tmp_path
-#
-#    ros_utils.split_single_rosbag(file_in=input_path,
-#                                  chunks=3,
-#                                  output_folder=output_folder)
-#
-#    list_files = file_utils.get_all_files_of_type_in_directory(output_folder, "bag")
-#
-#    assert len(list_files) == 3
-
-
-
-

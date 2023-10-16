@@ -23,7 +23,7 @@ ros_utils.get_images_from_bag(
          output_folder="/output_imgs/",
          file_format="jpg",
          create_manifest=True,
-         topics="/camera/image_raw",
+         topics=["/camera/image_raw"],
          naming="sequential",
          resize=[640,480],
          sample=2,
@@ -65,7 +65,7 @@ Do you have a request for a data format that's not listed above? Raise an issue 
 
 ## Community
 
-If you have any questions, comments, or want to chat, please join [our Slack channel](#).
+If you have any questions, comments, or want to chat, please join [our Discord channel](https://discord.com/invite/rvXqP6EjwF).
 
 ## Contribute 
 ### How to Contribute
