@@ -61,8 +61,6 @@ And here is how you can run a robologs-ros-utils command inside the Docker image
 docker run -v ~/Desktop/scratch/:/input/ -it --rm robologs-ros-utils-image robologs-ros-utils get-videos -i /input/example_bag_small.bag -o /input/ --naming rosbag_timestamp --format jpg --save-images
 ```
 
-Do you have a request for a data format that's not listed above? Raise an issue or join our Slack community and make a request!
-
 ## Community
 
 If you have any questions, comments, or want to chat, please join [our Discord channel](https://discord.com/invite/rvXqP6EjwF).
@@ -97,7 +95,7 @@ poetry run mypy robologs_ros_utils/sources/
 poetry run isort --check-only .
 ```
 
-# test the CLI locally
+# Test the CLI locally
 ```bash
 # clean local build
 ./clean_build.sh
