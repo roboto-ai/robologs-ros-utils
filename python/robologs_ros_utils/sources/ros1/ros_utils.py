@@ -273,7 +273,7 @@ def get_video_from_image_folder(folder: str, save_imgs: bool = True) -> None:
     ros_img_tools.create_video_from_images(input_path=folder, output_path=folder, frame_rate=frame_rate)
 
     if not save_imgs:
-        file_utils.delete_files_of_type(folder, file_extension=".jpg")  # assuming the images are in '.jpg' format
+        file_utils.delete_files_of_type(folder, file_format_list=[".jpg"])  # assuming the images are in '.jpg' format
 
     return
 
