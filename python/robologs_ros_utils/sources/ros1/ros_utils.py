@@ -393,10 +393,20 @@ def get_images_from_bag(
                         "8UC3": "RGB",
                         "bgra8": "RGBA",
                         "bgr8": "RGB",
+                        "mono16": "I;16",  # Added support for mono16
                     }
-                    cv_image = np.array(Image.frombytes(img_encodings[msg.encoding], (msg.width, msg.height), msg.data))
-                    if msg.encoding == "bgra8":
-                        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
+                    if msg.encoding in img_encodings:
+                        pil_mode = img_encodings[msg.encoding]
+                        cv_image = np.array(
+                            Image.frombuffer(pil_mode, (msg.width, msg.height), msg.data, "raw", pil_mode, 0, 1))
+                        if msg.encoding == "bgra8":
+                            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
+                    elif msg.encoding == "mono16":
+                        cv_image = np.frombuffer(msg.data, dtype=np.uint16).reshape(msg.height, msg.width)
+                        cv_image = (cv_image / 256).astype(np.uint8)  # Convert from 16-bit to 8-bit if necessary
+                    else:
+                        print("Unsupported image encoding:", msg.encoding)
+                        exit(0)
 
                 if msg.__msgtype__ == "sensor_msgs/msg/CompressedImage":
                     if "compressedDepth" in msg.format:
