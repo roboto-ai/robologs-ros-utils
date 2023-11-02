@@ -390,6 +390,12 @@ def get_images_from_bag(
                 if not os.path.exists(output_images_folder_folder_path):
                     os.makedirs(output_images_folder_folder_path)
 
+                if msg.__msgtype__ == "sensor_msgs/msg/CompressedImage":
+                    if "compressedDepth" in msg.format:
+                        cv_image = ros_img_tools.convert_compressed_depth_to_cv2(msg)
+                    else:
+                        cv_image = ros_img_tools.convert_image_to_cv2(msg)
+
                 if naming == "rosbag_timestamp":
                     image_name = get_image_name_from_timestamp(timestamp=t, file_format=file_format)
 
@@ -405,7 +411,6 @@ def get_images_from_bag(
 
                 if resize:
                     cv_image = img_utils.resize_image(img=cv_image, new_width=resize[0], new_height=resize[1])
-
                 cv2.imwrite(image_path, cv_image)
 
                 if create_manifest:

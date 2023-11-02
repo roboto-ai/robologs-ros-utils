@@ -37,8 +37,10 @@ def convert_compressed_depth_to_cv2(compressed_depth):
     if depth_img_raw is None:
         raise Exception("Could not decode compressed depth image. Adjust 'depth_header_size' if necessary.")
 
-    depth_img_norm = cv2.normalize(depth_img_raw, depth_img_raw, 0, 255, norm_type=cv2.NORM_MINMAX)
-    depth_img_colormap = cv2.applyColorMap(depth_img_raw, cv2.COLORMAP_JET)
+    # Normalize the depth image to 0-255 and convert to 8-bit
+    depth_img_8bit = cv2.normalize(depth_img_raw, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+
+    depth_img_colormap = cv2.applyColorMap(depth_img_8bit, cv2.COLORMAP_JET)
 
     return depth_img_colormap
 
