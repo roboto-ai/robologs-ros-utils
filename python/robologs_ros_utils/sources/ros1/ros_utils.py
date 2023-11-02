@@ -12,6 +12,7 @@ from typing import List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
+from rosbags.image import message_to_cvimage
 from bagpy import bagreader
 from PIL import Image
 from rosbags.rosbag1 import Reader
@@ -356,6 +357,7 @@ def get_images_from_bag(
     logging.debug(f"Robologs: extracting images...")
     print(f"Robologs: iterating over {total_number_of_images} images to extract: {nr_imgs_to_extract} images")
 
+
     with Reader(rosbag_path) as reader:
         connections = [x for x in reader.connections if x.topic in topics]
 
@@ -366,7 +368,10 @@ def get_images_from_bag(
         with tqdm(total=total_number_of_images) as pbar:
             for it, (connection, t, rawdata) in enumerate(reader.messages(connections=connections)):
                 topic = connection.topic
+
                 msg = deserialize_cdr(ros1_to_cdr(rawdata, connection.msgtype), connection.msgtype)
+                cv_image = message_to_cvimage(msg)
+
                 rosbag_time_s = t * 1e-9
                 time_from_start_s = rosbag_time_s - rosbag_metadata_dict["start_time"]
                 if not check_if_in_time_range(time_from_start_s, start_time, end_time):
@@ -384,35 +389,6 @@ def get_images_from_bag(
 
                 if not os.path.exists(output_images_folder_folder_path):
                     os.makedirs(output_images_folder_folder_path)
-
-                if msg.__msgtype__ == "sensor_msgs/msg/Image":
-                    img_encodings = {
-                        "rgb8": "RGB",
-                        "rgba8": "RGBA",
-                        "mono8": "L",
-                        "8UC3": "RGB",
-                        "bgra8": "RGBA",
-                        "bgr8": "RGB",
-                        "mono16": "I;16",  # Added support for mono16
-                    }
-                    if msg.encoding in img_encodings:
-                        pil_mode = img_encodings[msg.encoding]
-                        cv_image = np.array(
-                            Image.frombuffer(pil_mode, (msg.width, msg.height), msg.data, "raw", pil_mode, 0, 1))
-                        if msg.encoding == "bgra8":
-                            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
-                    elif msg.encoding == "mono16":
-                        cv_image = np.frombuffer(msg.data, dtype=np.uint16).reshape(msg.height, msg.width)
-                        cv_image = (cv_image / 256).astype(np.uint8)  # Convert from 16-bit to 8-bit if necessary
-                    else:
-                        print("Unsupported image encoding:", msg.encoding)
-                        exit(0)
-
-                if msg.__msgtype__ == "sensor_msgs/msg/CompressedImage":
-                    if "compressedDepth" in msg.format:
-                        cv_image = ros_img_tools.convert_compressed_depth_to_cv2(msg)
-                    else:
-                        cv_image = ros_img_tools.convert_image_to_cv2(msg)
 
                 if naming == "rosbag_timestamp":
                     image_name = get_image_name_from_timestamp(timestamp=t, file_format=file_format)
