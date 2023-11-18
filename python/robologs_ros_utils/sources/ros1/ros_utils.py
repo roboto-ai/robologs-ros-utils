@@ -391,17 +391,22 @@ def get_images_from_bag(
                     os.makedirs(output_images_folder_folder_path)
 
                 if msg.__msgtype__ == "sensor_msgs/msg/Image":
-                    img_encodings = {
-                        "rgb8": "RGB",
-                        "rgba8": "RGBA",
-                        "mono8": "L",
-                        "8UC3": "RGB",
-                        "bgra8": "RGBA",
-                        "bgr8": "RGB",
-                    }
-                    cv_image = np.array(Image.frombytes(img_encodings[msg.encoding], (msg.width, msg.height), msg.data))
-                    if msg.encoding == "bgra8":
-                        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
+                    if msg.encoding == "bayer_rggb16":
+                        cv_image = np.frombuffer(msg.data, np.uint16).reshape(msg.height, msg.width)
+                        cv_image = cv2.normalize(cv_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+                        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BAYER_BG2BGR)
+                    else:
+                        img_encodings = {
+                            "rgb8": "RGB",
+                            "rgba8": "RGBA",
+                            "mono8": "L",
+                            "8UC3": "RGB",
+                            "bgra8": "RGBA",
+                            "bgr8": "RGB",
+                        }
+                        cv_image = np.array(Image.frombytes(img_encodings[msg.encoding], (msg.width, msg.height), msg.data))
+                        if msg.encoding == "bgra8":
+                            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA)
 
                 if msg.__msgtype__ == "sensor_msgs/msg/CompressedImage":
                     if "compressedDepth" in msg.format:
