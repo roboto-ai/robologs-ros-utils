@@ -61,46 +61,39 @@ def convert_image_to_cv2(msg):
 
 def create_video_from_images(input_path, output_path, output_name="video.mp4", frame_rate=12, resize=None):
     """
-    Creates a video from a collection of images stored in a specified directory.
-
-    Args:
-        input_path (str): Directory where the input images are stored.
-        output_path (str): Directory where the output video will be saved.
-        output_name (str): Name of the output video file. Defaults to 'video.mp4'.
-        frame_rate (int): Frame rate of the output video. Defaults to 12.
-        resize (float, optional): Factor by which to resize the images. If None, images are not resized.
-
-    Returns:
-        None
+    Creates a video from a collection of images stored in a specified directory, more memory-efficiently.
     """
-    img_array = []
     output_video_path = os.path.join(output_path, output_name)
     output_video_path_temp = os.path.join(output_path, "temp.mp4")
 
-    img_list = sorted(glob.glob(os.path.join(input_path, "./*.jpg")))
-
+    img_list = sorted(glob.glob(os.path.join(input_path, "*.jpg")))
     if not img_list:
-        img_list = sorted(glob.glob(os.path.join(input_path, "./*.png")))
+        img_list = sorted(glob.glob(os.path.join(input_path, "*.png")))
 
     if not img_list:
         print("No images found in the specified directory.")
         return
 
+    # Initialize VideoWriter with the properties of the first image
+    first_img = cv2.imread(img_list[0])
+    if resize:
+        first_img = cv2.resize(first_img, (0, 0), fx=resize, fy=resize, interpolation=cv2.INTER_LANCZOS4)
+
+    height, width = (first_img.shape[0], first_img.shape[1]) if len(first_img.shape) == 3 else first_img.shape
+    size = (width, height)
+    out = cv2.VideoWriter(output_video_path_temp, cv2.VideoWriter_fourcc(*"mp4v"), frame_rate, size)
+
+    # Process and write each image individually
     for filename in img_list:
         img = cv2.imread(filename)
         if resize:
             img = cv2.resize(img, (0, 0), fx=resize, fy=resize, interpolation=cv2.INTER_LANCZOS4)
+        
+        out.write(img)
 
-        height, width = (img.shape[0], img.shape[1]) if len(img.shape) == 3 else img.shape
-        size = (width, height)
-        img_array.append(img)
-
-    out = cv2.VideoWriter(output_video_path_temp, cv2.VideoWriter_fourcc(*"mp4v"), frame_rate, size)
-
-    for i in range(len(img_array)):
-        out.write(img_array[i])
     out.release()
 
     # Using FFmpeg to convert the temporary video to final format
     subprocess.call(["ffmpeg", "-i", output_video_path_temp, "-vcodec", "libx264", "-y", output_video_path])
     os.remove(output_video_path_temp)
+
