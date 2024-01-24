@@ -372,6 +372,11 @@ def get_images_from_bag(
                 msg = deserialize_cdr(ros1_to_cdr(rawdata, connection.msgtype), connection.msgtype)
                 cv_image = message_to_cvimage(msg)
 
+                if msg.encoding == "bayer_rggb16":
+                    cv_image = np.frombuffer(msg.data, np.uint16).reshape(msg.height, msg.width)
+                    cv_image = cv2.normalize(cv_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+                    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BAYER_BG2BGR)
+
                 rosbag_time_s = t * 1e-9
                 time_from_start_s = rosbag_time_s - rosbag_metadata_dict["start_time"]
                 if not check_if_in_time_range(time_from_start_s, start_time, end_time):
